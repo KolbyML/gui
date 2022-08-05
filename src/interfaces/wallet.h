@@ -9,6 +9,8 @@
 #include <fs.h>
 #include <interfaces/chain.h>          // For ChainClient
 #include <pubkey.h>                    // For CKeyID and CScriptID (definitions needed in CTxDestination instantiation)
+#include <script/descriptor.h>         // For Descriptor
+#include <script/keyorigin.h>          // For KeyOriginInfo
 #include <script/standard.h>           // For CTxDestination
 #include <support/allocators/secure.h> // For SecureString
 #include <util/message.h>
@@ -33,11 +35,20 @@ enum class TransactionError;
 struct PartiallySignedTransaction;
 struct bilingual_str;
 namespace wallet {
+class CAddressBookData;
 class CCoinControl;
 class CWallet;
+class WalletRescanReserver;
 enum isminetype : unsigned int;
 struct CRecipient;
+struct ImportDescriptorData;
+struct ImportMultiData;
 struct WalletContext;
+bool ProcessDescriptorImport(CWallet& wallet, const ImportDescriptorData& data, std::vector<std::string>& warnings, FlatSigningProvider& keys, bool range_exists, const int64_t timestamp);
+bool ProcessImport(CWallet& wallet, const ImportMultiData& data, std::vector<std::string>& warnings, const int64_t timestamp);
+bool ProcessPublicKey(CWallet& wallet, std::string strLabel, CPubKey pubKey);
+bool ProcessPrivateKey(CWallet& wallet, std::string strLabel, CKey key);
+bool ProcessAddress(CWallet &wallet, std::string strAddress, std::string strLabel, bool fP2SH);
 using isminefilter = std::underlying_type<isminetype>::type;
 } // namespace wallet
 
@@ -311,6 +322,43 @@ public:
 
     //! Return pointer to internal wallet class, useful for testing.
     virtual wallet::CWallet* wallet() { return nullptr; }
+
+    //! Return a reference to chain
+    virtual interfaces::Chain& chain() = 0;
+
+    //! Rescan wallet transactions from timestamp
+    virtual int64_t RescanFromTime(int64_t startTime, const wallet::WalletRescanReserver& reserver, bool update) = 0;
+
+    //! Re-accept wallet transactions
+    virtual void ReacceptWalletTransactions() = 0;
+
+    //! Check if rescan is aborting
+    virtual bool IsAbortingRescan() = 0;
+
+    //! Get a wallet rescan reserver
+    virtual wallet::WalletRescanReserver getReserver() = 0;
+
+    //! Connect ScriptPubKeyMan Notifiers
+    virtual void ConnectScriptPubKeyManNotifiers() = 0;
+
+    //! Get last block hash
+    virtual uint256 GetLastBlockHash() = 0;
+
+    //! Process descriptor import
+    virtual bool ProcessDescriptorImport(const wallet::ImportDescriptorData& data, std::vector<std::string>& warnings, FlatSigningProvider& keys, bool range_exists, const int64_t timestamp) = 0;
+
+    //! Process import
+    virtual bool ProcessImport(const wallet::ImportMultiData& data, std::vector<std::string>& warnings, const int64_t timestamp) = 0;
+
+    //! Process public key
+    virtual bool ProcessPublicKey(std::string strLabel, CPubKey pubKey) = 0;
+
+    //! Process private key
+    virtual bool ProcessPrivateKey(std::string strLabel, CKey key) = 0;
+
+    //! Process address
+    virtual bool ProcessAddress(std::string strAddress, std::string strLabel, bool fP2SH) = 0;
+
 };
 
 //! Wallet chain client that in addition to having chain client methods for
