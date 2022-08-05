@@ -520,6 +520,58 @@ public:
 
     WalletContext& m_context;
     std::shared_ptr<CWallet> m_wallet;
+    interfaces::Chain& chain() override { return m_wallet->chain(); }
+    int64_t RescanFromTime(int64_t startTime, const WalletRescanReserver& reserver, bool update) override
+    {
+        return m_wallet->RescanFromTime(startTime, reserver, update);
+    }
+    void ReacceptWalletTransactions() override {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->ReacceptWalletTransactions();
+    }
+    bool IsAbortingRescan() override
+    {
+        return m_wallet->IsAbortingRescan();
+    }
+    WalletRescanReserver getReserver() override
+    {
+        WalletRescanReserver reserver(*m_wallet);
+        return reserver;
+    }
+    void ConnectScriptPubKeyManNotifiers() override
+    {
+        return m_wallet->ConnectScriptPubKeyManNotifiers();
+    }
+    uint256 GetLastBlockHash() override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->GetLastBlockHash();
+    }
+    bool ProcessDescriptorImport(const ImportDescriptorData& data, std::vector<std::string>& warnings, FlatSigningProvider& keys, bool range_exists, const int64_t timestamp) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return wallet::ProcessDescriptorImport(*m_wallet, data, warnings, keys, range_exists, timestamp);
+    }
+    bool ProcessImport(const ImportMultiData& data, std::vector<std::string>& warnings, const int64_t timestamp) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return wallet::ProcessImport(*m_wallet, data, warnings, timestamp);
+    }
+    bool ProcessPublicKey(std::string strLabel, CPubKey pubKey) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return wallet::ProcessPublicKey(*m_wallet, strLabel, pubKey);
+    }
+    bool ProcessPrivateKey(std::string strLabel, CKey key) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return wallet::ProcessPrivateKey(*m_wallet, strLabel, key);
+    }
+    bool ProcessAddress(std::string strAddress, std::string strLabel, bool fP2SH) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return wallet::ProcessAddress(*m_wallet, strAddress, strLabel, fP2SH);
+    }
 };
 
 class WalletLoaderImpl : public WalletLoader
